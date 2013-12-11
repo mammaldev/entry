@@ -1,0 +1,40 @@
+{
+  "name": "entry",
+  "version": "0.0.1",
+  "description": "A tool to start multiple long-running shell processes",
+  "main": "entry.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:mammaldev/entry.git"
+  },
+  "keywords": [
+    "shell",
+    "process",
+    "entry",
+    "spawn",
+    "utility"
+  ],
+  "bin": {
+    "entry": "bin/entry"
+  },
+  "preferGlobal": true,
+  "author": "Mammal Development",
+  "contributors": [
+    {
+      "name": "Ollie Relph",
+      "email": "ollie@mammal.io"
+    },
+    {
+      "name": "Nick Cartwright",
+      "email": "nick@mammal.io"
+    }
+  ],
+  "license": "BSD",
+  "dependencies": {
+    "colors": "~0.6.2",
+    "findup-sync": "~0.1.2"
+  }
+}

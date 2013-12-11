@@ -1,0 +1,18 @@
+[
+  {
+    "handle": "grunt",
+    "spawn": {
+      "command": "grunt",
+      "args": [ "dev" ]
+    },
+    "stdinPrefix": "grunt"
+  },
+  {
+    "handle": "nodemon",
+    "spawn": {
+      "command": "nodemon",
+      "args": [ "-w", "server", "server/server.js" ]
+    },
+    "stdinPrefix": "nd"
+  }
+]
