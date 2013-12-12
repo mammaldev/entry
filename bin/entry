@@ -1,6 +1,10 @@
 #!/usr/bin/env node
-var spawn = require('child_process').spawn;
+var Q = require('q');
+var fs = require('fs');
 var colors = require('colors');
+var exec = require('child_process').exec;
+var spawn = require('child_process').spawn;
+
 var findup = require('findup-sync');
 
 var available_colors = [
@@ -23,33 +27,67 @@ if (!childProcesses) {
 
 childProcesses = require(childProcesses);
 
-// generic stdout & stderr
-childProcesses.forEach(function( cp, i ) {
-  cp.process = spawn(cp.spawn.command, cp.spawn.args);
+setEnv()
+.then(spawnProcesses)
+.then(pipeStdIn)
+.fail(function( err ) {
+  console.log('somehting wrong:', err);
+});
  
-  [ 'stdout', 'stderr' ].forEach(function( str ) {
-    cp.process[ str ].on('data', function( data ) {
-      process[ str ].write(
-          data.toString('utf8')
-          .replace(/(^|\n)([^\n]+)/g, function( match, group1, group2 ) {
-            return group1 + ( cp.handle + ': ' )[available_colors[i % available_colors.length]] + group2;
-          }));
+function setEnv() {
+  var deferred = Q.defer();
+
+  var env = findup('.env');
+  if (!env) {
+    deferred.resolve();
+  }
+
+  exec('source ' + env + ' && printenv', { cwd: env.replace(/\.env$/, '') }, function( err, stdout, stderr ) {
+    if ( err ) {
+      throw new Error(err);
+    }
+
+    stdout.split('\n').forEach(function( line ) {
+      var parts = line.split('=');
+      process.env[ parts[0] ] = parts[1];
+    });
+
+    deferred.resolve();
+  });
+
+  return deferred.promise;
+}
+
+function spawnProcesses() {
+  // generic stdout & stderr
+  childProcesses.forEach(function( cp, i ) {
+    cp.process = spawn(cp.spawn.command, cp.spawn.args);
+   
+    [ 'stdout', 'stderr' ].forEach(function( str ) {
+      cp.process[ str ].on('data', function( data ) {
+        process[ str ].write(
+            data.toString('utf8')
+            .replace(/(^|\n)([^\n]+)/g, function( match, group1, group2 ) {
+              return group1 + ( cp.handle + ': ' )[available_colors[i % available_colors.length]] + group2;
+            }));
+      });
     });
   });
-});
- 
-// generic stdin handling
-process.stdin.resume();
-process.stdin.on('data', function( chunk ) {
-  var s = chunk.toString('utf8');
-  var cp = childProcesses.filter(function( cp ) {
-    return typeof cp.stdinPrefix === 'string' && ( new RegExp('^' + cp.stdinPrefix + '\\.') ).test(s);
-  })[ 0 ];
- 
-  if ( !cp ) {
-    return console.log(('No target for input').red);
-  }
- 
-  var cmd = s.substring(cp.stdinPrefix.length + 1);
-  cp.process.stdin.write(cmd);
-});
+}
+
+function pipeStdIn() {
+  process.stdin.resume();
+  process.stdin.on('data', function( chunk ) {
+    var s = chunk.toString('utf8');
+    var cp = childProcesses.filter(function( cp ) {
+      return typeof cp.stdinPrefix === 'string' && ( new RegExp('^' + cp.stdinPrefix + '\\.') ).test(s);
+    })[ 0 ];
+   
+    if ( !cp ) {
+      return console.log(('No target for input').red);
+    }
+   
+    var cmd = s.substring(cp.stdinPrefix.length + 1);
+    cp.process.stdin.write(cmd);
+  });
+}
