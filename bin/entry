@@ -40,20 +40,21 @@ function setEnv() {
   var env = findup('.env');
   if (!env) {
     deferred.resolve();
+  } else {
+    exec('source ' + env + ' && printenv', { cwd: env.replace(/\.env$/, '') }, function( err, stdout, stderr ) {
+      if ( err ) {
+        throw new Error(err);
+      }
+
+      stdout.split('\n').forEach(function( line ) {
+        var parts = line.split('=');
+        process.env[ parts[0] ] = parts[1];
+      });
+
+      deferred.resolve();
+    });
   }
 
-  exec('source ' + env + ' && printenv', { cwd: env.replace(/\.env$/, '') }, function( err, stdout, stderr ) {
-    if ( err ) {
-      throw new Error(err);
-    }
-
-    stdout.split('\n').forEach(function( line ) {
-      var parts = line.split('=');
-      process.env[ parts[0] ] = parts[1];
-    });
-
-    deferred.resolve();
-  });
 
   return deferred.promise;
 }
