@@ -1,6 +1,6 @@
 {
   "name": "entry",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "A tool to start multiple long-running shell processes",
   "main": "entry.js",
   "scripts": {
