@@ -1,18 +1,19 @@
 [
   {
-    "handle": "grunt",
+    "handle": "sleep",
     "spawn": {
-      "command": "grunt",
-      "args": [ "dev" ]
+      "command": "sleep",
+      "args": [ "2" ]
     },
-    "stdinPrefix": "grunt"
+    "stdinPrefix": "sleep"
   },
   {
-    "handle": "nodemon",
+    "handle": "echo",
     "spawn": {
-      "command": "nodemon",
-      "args": [ "-w", "server", "server/server.js" ]
+      "command": "echo",
+      "args": [ "'sausages'" ]
     },
-    "stdinPrefix": "nd"
+    "stdinPrefix": "nd",
+    "wait": "sleep"
   }
 ]

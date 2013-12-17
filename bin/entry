@@ -27,6 +27,8 @@ if (!childProcesses) {
 
 childProcesses = require(childProcesses);
 
+var completed = [];
+
 setEnv()
 .then(spawnProcesses)
 .then(pipeStdIn)
@@ -59,20 +61,42 @@ function setEnv() {
   return deferred.promise;
 }
 
+function spawnProcess(cp, i) {
+  cp.process = spawn(cp.spawn.command, cp.spawn.args);
+  
+  [ 'stdout', 'stderr' ].forEach(function( str ) {
+    cp.process[ str ].on('data', function( data ) {
+      process[ str ].write(
+          data.toString('utf8')
+          .replace(/(^|\n)([^\n]+)/g, function( match, group1, group2 ) {
+            return group1 + ( cp.handle + ': ' )[available_colors[i % available_colors.length]] + group2;
+          }));
+    })
+    .on('close', function ( code, signal ) {
+      if (completed.indexOf(cp.handle) < 0) {
+        completed.push(cp.handle);
+        process[ 'stdout' ].write(('------------------\n')[available_colors[i % available_colors.length]]);
+        process[ 'stdout' ].write(
+          ( cp.handle + ': completed\n' )[available_colors[i % available_colors.length]]
+        );
+        process[ 'stdout' ].write(('------------------\n')[available_colors[i % available_colors.length]]);
+
+        childProcesses.forEach(function( cp2, i2 ) {
+          if (cp2.hasOwnProperty('wait') && cp2.wait === cp.handle) {
+            spawnProcess(cp2, i2);
+          }
+        });
+      }
+    });
+  });
+}
+
 function spawnProcesses() {
   // generic stdout & stderr
   childProcesses.forEach(function( cp, i ) {
-    cp.process = spawn(cp.spawn.command, cp.spawn.args);
-   
-    [ 'stdout', 'stderr' ].forEach(function( str ) {
-      cp.process[ str ].on('data', function( data ) {
-        process[ str ].write(
-            data.toString('utf8')
-            .replace(/(^|\n)([^\n]+)/g, function( match, group1, group2 ) {
-              return group1 + ( cp.handle + ': ' )[available_colors[i % available_colors.length]] + group2;
-            }));
-      });
-    });
+    if (!cp.hasOwnProperty('wait')) {
+      spawnProcess(cp, i);
+    }
   });
 }
 
