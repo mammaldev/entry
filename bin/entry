@@ -82,7 +82,7 @@ function spawnProcess(cp, i) {
         process[ 'stdout' ].write(('------------------\n')[available_colors[i % available_colors.length]]);
 
         childProcesses.forEach(function( cp2, i2 ) {
-          if (cp2.hasOwnProperty('wait') && cp2.wait === cp.handle) {
+          if (cp2.hasOwnProperty('waitOn') && cp2.waitOn === cp.handle) {
             spawnProcess(cp2, i2);
           }
         });
@@ -94,7 +94,7 @@ function spawnProcess(cp, i) {
 function spawnProcesses() {
   // generic stdout & stderr
   childProcesses.forEach(function( cp, i ) {
-    if (!cp.hasOwnProperty('wait')) {
+    if (!cp.hasOwnProperty('waitOn')) {
       spawnProcess(cp, i);
     }
   });
