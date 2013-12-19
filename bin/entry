@@ -16,8 +16,9 @@ var available_colors = [
   'blue'
 ];
  
+var conf = process.argv[2] || 'entry.json';
 // app-specific config
-var childProcesses = findup('entry.json');
+var childProcesses = findup(conf);
  
 if (!childProcesses) {
   console.log('Unable to find local entry.json');
