@@ -4,6 +4,7 @@ var fs = require('fs');
 var colors = require('colors');
 var exec = require('child_process').exec;
 var spawn = require('child_process').spawn;
+var argv = require('minimist')(process.argv.slice(2));
 
 var findup = require('findup-sync');
 
@@ -15,10 +16,9 @@ var available_colors = [
   'grey',
   'blue'
 ];
- 
-var conf = process.argv[2] || 'entry.json';
-// app-specific config
-var childProcesses = findup(conf);
+
+var env = ( typeof argv.env === 'string' ) ? argv.env : findup('.env');
+var childProcesses = ( typeof argv.config === 'string' ) ? argv.config : findup('entry.json');
  
 if (!childProcesses) {
   console.log('Unable to find local entry.json');
@@ -40,11 +40,10 @@ setEnv()
 function setEnv() {
   var deferred = Q.defer();
 
-  var env = findup('.env');
   if (!env) {
     deferred.resolve();
   } else {
-    exec('source ' + env + ' && printenv', { cwd: env.replace(/\.env$/, '') }, function( err, stdout, stderr ) {
+    exec('source ' + env + ' && printenv', { cwd: env.replace(/\/.*/, '') }, function( err, stdout, stderr ) {
       if ( err ) {
         throw new Error(err);
       }

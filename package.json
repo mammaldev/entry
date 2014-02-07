@@ -1,6 +1,6 @@
 {
   "name": "entry",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "description": "A tool to start multiple long-running shell processes",
   "main": "entry.js",
   "scripts": {
@@ -36,6 +36,7 @@
   "dependencies": {
     "colors": "~0.6.2",
     "findup-sync": "~0.1.2",
-    "q": "~0.9.7"
+    "q": "~0.9.7",
+    "minimist": "0.0.5"
   }
 }
