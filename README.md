@@ -3,8 +3,11 @@ entry
 
 A command-line tool to start multiple long-running shell processes
 
+    npm install -g mammaldev/entry
+
+Usage: 
 ```
-Usage: entry {OPTIONS}
+entry {OPTIONS}
 
 Standard options:
 
