@@ -18,7 +18,12 @@ var available_colors = [
 ];
 
 var env = ( typeof argv.env === 'string' ) ? argv.env : findup('.env');
-var childProcesses = ( typeof argv.config === 'string' ) ? argv.config : findup('entry.json');
+var childProcesses;
+if ( typeof argv.config === 'string' ) {
+  childProcesses =  process.cwd() + '/' + argv.config;
+} else {
+  childProcesses = findup('entry.json');
+}
  
 if (!childProcesses) {
   console.log('Unable to find local entry.json');
