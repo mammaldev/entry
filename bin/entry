@@ -62,32 +62,50 @@ function setEnv() {
   return deferred.promise;
 }
 
-function spawnProcess(cp, i) {
-  cp.process = spawn(cp.spawn.command, cp.spawn.args);
-  
-  [ 'stdout', 'stderr' ].forEach(function( str ) {
-    cp.process[ str ].on('data', function( data ) {
-      process[ str ].write(
-          data.toString('utf8')
-          .replace(/(^|\n)([^\n]+)/g, function( match, group1, group2 ) {
-            return group1 + ( cp.handle + ': ' )[available_colors[i % available_colors.length]] + group2;
-          }));
-    })
-    .on('close', function ( code, signal ) {
-      if (completed.indexOf(cp.handle) < 0) {
-        completed.push(cp.handle);
-        process[ 'stdout' ].write(('------------------\n')[available_colors[i % available_colors.length]]);
-        process[ 'stdout' ].write(
-          ( cp.handle + ': completed\n' )[available_colors[i % available_colors.length]]
-        );
-        process[ 'stdout' ].write(('------------------\n')[available_colors[i % available_colors.length]]);
+function commandExists(cp) {
+  var deferred = Q.defer();
 
-        childProcesses.forEach(function( cp2, i2 ) {
-          if (cp2.hasOwnProperty('waitOn') && cp2.waitOn === cp.handle) {
-            spawnProcess(cp2, i2);
-          }
-        });
-      }
+  exec('command -v ' + cp.spawn.command + ' >/dev/null 2>&1 || { echo >&2; exit 1; }', function (error, stdout, stderr) {
+    if (error !== null) {
+      console.log(('Error: ' + cp.handle + ' does not exist').red);
+      process.exit();
+    }
+    deferred.resolve();
+  });
+
+  return deferred.promise;
+}
+
+function spawnProcess(cp, i) {
+  // check to see if the bin exists
+  commandExists(cp)
+  .then(function() {
+    cp.process = spawn(cp.spawn.command, cp.spawn.args);
+    
+    [ 'stdout', 'stderr' ].forEach(function( str ) {
+      cp.process[ str ].on('data', function( data ) {
+        process[ str ].write(
+            data.toString('utf8')
+            .replace(/(^|\n)([^\n]+)/g, function( match, group1, group2 ) {
+              return group1 + ( cp.handle + ': ' )[available_colors[i % available_colors.length]] + group2;
+            }));
+      })
+      .on('close', function ( code, signal ) {
+        if (completed.indexOf(cp.handle) < 0) {
+          completed.push(cp.handle);
+          process[ 'stdout' ].write(('------------------\n')[available_colors[i % available_colors.length]]);
+          process[ 'stdout' ].write(
+            ( cp.handle + ': completed\n' )[available_colors[i % available_colors.length]]
+          );
+          process[ 'stdout' ].write(('------------------\n')[available_colors[i % available_colors.length]]);
+
+          childProcesses.forEach(function( cp2, i2 ) {
+            if (cp2.hasOwnProperty('waitOn') && cp2.waitOn === cp.handle) {
+              spawnProcess(cp2, i2);
+            }
+          });
+        }
+      });
     });
   });
 }
