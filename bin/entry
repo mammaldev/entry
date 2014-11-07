@@ -19,12 +19,12 @@ var available_colors = [
 ];
 
 var env = ( typeof argv.env === 'string' ) ? path.resolve(argv.env) : findup('.env');
-var childProcesses = ( typeof argv.config === 'string' ) ? path.resolve(argv.config) : findup('entry.json')
+var childProcesses = ( typeof argv.config === 'string' ) ? path.resolve(argv.config) : findup('entry.json');
 
 console.log('\nenv:\t%s\nconfig:\t%s\n', env, childProcesses);
  
 if ( !childProcesses ) {
-  console.log('Unable to find local entry.json\n');
+  console.error(('Unable to find local entry.json\n').red);
   process.exit(99);
 }
 
@@ -36,7 +36,7 @@ return validateConfig(childProcesses)
 .then(spawnProcesses)
 .then(pipeStdIn)
 .fail(function( err ) {
-  console.log('somehting wrong:', err);
+  console.log(('Error: ' +  err.message).red);
 });
  
 function setEnv() {
@@ -95,7 +95,7 @@ function spawnProcess(cp, i) {
           completed.push(cp.handle);
           process[ 'stdout' ].write(('------------------\n')[available_colors[i % available_colors.length]]);
           process[ 'stdout' ].write(
-            ( cp.handle + ': completed\n' )[available_colors[i % available_colors.length]]
+            (cp.handle + ': completed\n' )[available_colors[i % available_colors.length]]
           );
           process[ 'stdout' ].write(('------------------\n')[available_colors[i % available_colors.length]]);
 
