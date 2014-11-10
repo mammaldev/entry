@@ -2,9 +2,8 @@
   "name": "entry",
   "version": "0.1.0",
   "description": "A tool to start multiple long-running shell processes",
-  "main": "entry.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "mocha test/ -R spec --recursive"
   },
   "repository": {
     "type": "git",
@@ -30,13 +29,21 @@
     {
       "name": "Nick Cartwright",
       "email": "nick@mammal.io"
+    },
+    {
+      "name": "Winna Bridgewater",
+      "email": "winna.bridgewater@mammal.io"
+    },
+    {
+      "name": "James Allardice",
+      "email": "james.allardice@mammal.io"
     }
   ],
   "license": "BSD",
   "dependencies": {
-    "colors": "~0.6.2",
-    "findup-sync": "~0.1.2",
-    "q": "~0.9.7",
-    "minimist": "0.0.5"
+    "colors": "^1.0.0",
+    "findup-sync": "^0.1.2",
+    "q": "^1.1.0",
+    "minimist": "^1.1.0"
   }
 }
