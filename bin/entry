@@ -19,24 +19,31 @@ var available_colors = [
 ];
 
 var env = ( typeof argv.env === 'string' ) ? path.resolve(argv.env) : findup('.env');
-var childProcesses = ( typeof argv.config === 'string' ) ? path.resolve(argv.config) : findup('entry.json')
+var childProcesses = ( typeof argv.config === 'string' ) ? path.resolve(argv.config) : findup('entry.json');
 
 console.log('\nenv:\t%s\nconfig:\t%s\n', env, childProcesses);
  
 if ( !childProcesses ) {
-  console.log('Unable to find local entry.json\n');
-  process.exit(99);
+  console.error(('Unable to find local entry.json\n').red);
+  process.exit(1);
 }
 
 childProcesses = require(childProcesses);
 
-var completed = [];
+var entries;
+try {
+  entries = validateConfig(childProcesses);
+} catch (e) {
+  console.error(('Error: ' +  e.message).red);
+  process.exit(1);
+}
 
-setEnv()
+var completed = [];
+return setEnv()
 .then(spawnProcesses)
 .then(pipeStdIn)
 .fail(function( err ) {
-  console.log('somehting wrong:', err);
+  console.error(('Error: ' +  err.message).red);
 });
  
 function setEnv() {
@@ -67,8 +74,7 @@ function commandExists(cp) {
 
   exec('command -v ' + cp.spawn.command + ' >/dev/null 2>&1 || { echo >&2; exit 1; }', function (error, stdout, stderr) {
     if (error !== null) {
-      console.log(('Error: ' + cp.handle + ' does not exist').red);
-      process.exit();
+      deferred.reject(new Error('Command ' + cp.spawn.command + ' for handle ' + cp.handle + ' does not exist'));
     }
     deferred.resolve();
   });
@@ -78,8 +84,9 @@ function commandExists(cp) {
 
 function spawnProcess(cp, i) {
   // check to see if the bin exists
-  commandExists(cp)
+  return commandExists(cp)
   .then(function() {
+    var deferred = Q.defer();
     cp.process = spawn(cp.spawn.command, cp.spawn.args);
     
     [ 'stdout', 'stderr' ].forEach(function( str ) {
@@ -95,28 +102,31 @@ function spawnProcess(cp, i) {
           completed.push(cp.handle);
           process[ 'stdout' ].write(('------------------\n')[available_colors[i % available_colors.length]]);
           process[ 'stdout' ].write(
-            ( cp.handle + ': completed\n' )[available_colors[i % available_colors.length]]
+            (cp.handle + ': completed\n' )[available_colors[i % available_colors.length]]
           );
           process[ 'stdout' ].write(('------------------\n')[available_colors[i % available_colors.length]]);
 
           childProcesses.forEach(function( cp2, i2 ) {
             if (cp2.hasOwnProperty('waitOn') && cp2.waitOn === cp.handle) {
-              spawnProcess(cp2, i2);
+              deferred.resolve(spawnProcess(cp2, i2));
             }
           });
         }
       });
     });
+    return deferred.promise;
   });
 }
 
 function spawnProcesses() {
   // generic stdout & stderr
-  childProcesses.forEach(function( cp, i ) {
-    if (!cp.hasOwnProperty('waitOn')) {
-      spawnProcess(cp, i);
-    }
-  });
+  return Q.all(
+    childProcesses.map(function( cp, i ) {
+      if (!cp.hasOwnProperty('waitOn')) {
+        return spawnProcess(cp, i);
+      }
+    })
+  );
 }
 
 function pipeStdIn() {
@@ -134,4 +144,48 @@ function pipeStdIn() {
     var cmd = s.substring(cp.stdinPrefix.length + 1);
     cp.process.stdin.write(cmd);
   });
+}
+
+function validateConfig(config) {
+  var handles = [];
+  var stdinPrefixes = [];
+  config.forEach(function (configItem, i) {
+    // handle exists
+    if ( !configItem.handle || configItem.handle.length === 0 ) {
+      throw new Error('Entry ' + i + ' has no handle. Handles are required.');
+    }
+
+    // handle is unique
+    if ( !!~handles.indexOf(configItem.handle) ) {
+      throw new Error(configItem.handle + ' is a handle for more than one entry. Handles must be unique.');
+    }
+
+    // command exists
+    if ( !configItem.spawn.command || configItem.spawn.command.length === 0 ) {
+      throw new Error('Entry ' + i + ' has no command. Commands are required.');
+    }
+
+    // if there is a waitOn property, it isn't blank (if it is blank, it'll hang)
+    if ( configItem.waitOn === "" ) {
+      throw new Error('waitOn for entry ' + i + ' is blank. Either remove the property or assign a value.');
+    }
+
+    // if there is a waitOn property, it waits on a handle that exists
+    if ( configItem.waitOn && !~handles.indexOf(configItem.waitOn) ) {
+      throw new Error('Entry ' + i + ' waits on handle ' + configItem.waitOn + ', which does not exist.');
+    }
+
+    // if there is a stdinPrefix property, it isn't blank
+    if ( configItem.stdinPrefix === "" ) {
+      throw new Error('stdinPrefix for entry ' + i + ' is blank. Either remove the property or assign a value.');
+    }
+
+    // stdinPrefix is unique
+    if ( configItem.stdinPrefix && !!~stdinPrefixes.indexOf(configItem.stdinPrefix) ) {
+      throw new Error(configItem.stdinPrefix + ' is a stdinPrefix for more than one entry. StdinPrefixes must be unique.');
+    }
+    handles.push(configItem.handle);
+    stdinPrefixes.push(configItem.stdinPrefix);
+  });
+  return config;
 }
