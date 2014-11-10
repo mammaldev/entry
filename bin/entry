@@ -25,18 +25,25 @@ console.log('\nenv:\t%s\nconfig:\t%s\n', env, childProcesses);
  
 if ( !childProcesses ) {
   console.error(('Unable to find local entry.json\n').red);
-  process.exit(99);
+  process.exit(1);
 }
 
 childProcesses = require(childProcesses);
 
+var entries;
+try {
+  entries = validateConfig(childProcesses);
+} catch (e) {
+  console.error(('Error: ' +  e.message).red);
+  process.exit(1);
+}
+
 var completed = [];
-return validateConfig(childProcesses)
-.then(setEnv)
+return setEnv()
 .then(spawnProcesses)
 .then(pipeStdIn)
 .fail(function( err ) {
-  console.log(('Error: ' +  err.message).red);
+  console.error(('Error: ' +  err.message).red);
 });
  
 function setEnv() {
@@ -140,48 +147,45 @@ function pipeStdIn() {
 }
 
 function validateConfig(config) {
-  var deferred = Q.defer();
   var handles = [];
   var stdinPrefixes = [];
   config.forEach(function (configItem, i) {
     // handle exists
     if ( !configItem.handle || configItem.handle.length === 0 ) {
-      deferred.reject(new Error('Entry ' + i + ' has no handle. Handles are required.'));
+      throw new Error('Entry ' + i + ' has no handle. Handles are required.');
     }
 
     // handle is unique
     if ( !!~handles.indexOf(configItem.handle) ) {
-      deferred.reject(new Error(configItem.handle + ' is a handle for more than one entry. Handles must be unique.'));
+      throw new Error(configItem.handle + ' is a handle for more than one entry. Handles must be unique.');
     }
 
     // command exists
     if ( !configItem.spawn.command || configItem.spawn.command.length === 0 ) {
-      deferred.reject(new Error('Entry ' + i + ' has no command. Commands are required.'));
+      throw new Error('Entry ' + i + ' has no command. Commands are required.');
     }
 
     // if there is a waitOn property, it isn't blank (if it is blank, it'll hang)
     if ( configItem.waitOn === "" ) {
-      deferred.reject(new Error('waitOn for entry ' + i + ' is blank. Either remove the property or assign a value.'));
+      throw new Error('waitOn for entry ' + i + ' is blank. Either remove the property or assign a value.');
     }
 
     // if there is a waitOn property, it waits on a handle that exists
     if ( configItem.waitOn && !~handles.indexOf(configItem.waitOn) ) {
-      deferred.reject(new Error('Entry ' + i + ' waits on handle ' + configItem.waitOn + ', which does not exist.'));
+      throw new Error('Entry ' + i + ' waits on handle ' + configItem.waitOn + ', which does not exist.');
     }
 
     // if there is a stdinPrefix property, it isn't blank
     if ( configItem.stdinPrefix === "" ) {
-      deferred.reject(new Error('stdinPrefix for entry ' + i + ' is blank. Either remove the property or assign a value.'));
+      throw new Error('stdinPrefix for entry ' + i + ' is blank. Either remove the property or assign a value.');
     }
 
     // stdinPrefix is unique
     if ( configItem.stdinPrefix && !!~stdinPrefixes.indexOf(configItem.stdinPrefix) ) {
-      deferred.reject(new Error(configItem.stdinPrefix + ' is a stdinPrefix for more than one entry. StdinPrefixes must be unique.'));
+      throw new Error(configItem.stdinPrefix + ' is a stdinPrefix for more than one entry. StdinPrefixes must be unique.');
     }
-
     handles.push(configItem.handle);
     stdinPrefixes.push(configItem.stdinPrefix);
   });
-  deferred.resolve(config);
-  return deferred.promise;
+  return config;
 }
