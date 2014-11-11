@@ -119,6 +119,7 @@ function commandExists( cp ) {
 //   color    {String}    The color to use for stdout logs from the process
 //
 function spawnProcess( cp, color ) {
+  console.log('SPAWNPROCESS COLOR', color);
   // check to see if the command exists
   return commandExists(cp)
   .then(function () {
@@ -146,25 +147,27 @@ function spawnProcess( cp, color ) {
             return group1 + ( cp.handle + ': ' )[ color ] + group2;
           })
         );
-      })
-      .on('close', function () {
-
-        if ( completed.indexOf(cp.handle) < 0 ) {
-
-          // Record the fact that this process has now finished. If other
-          // processes depend on it they can now run.
-          completed.push(cp.handle);
-          stdStreams.stdout.write('------------------\n'[ color ]);
-          stdStreams.stdout.write((cp.handle + ': completed\n')[ color ]);
-          stdStreams.stdout.write('------------------\n'[ color ]);
-
-          childProcesses.forEach(function ( cp2, i2 ) {
-            if (cp2.hasOwnProperty('waitOn') && cp2.waitOn === cp.handle) {
-              deferred.resolve(spawnProcess(cp2, i2));
-            }
-          });
-        }
       });
+    });
+
+    cp.process
+    .on('close', function () {
+
+      if ( completed.indexOf(cp.handle) < 0 ) {
+
+        // Record the fact that this process has now finished. If other
+        // processes depend on it they can now run.
+        completed.push(cp.handle);
+        stdStreams.stdout.write('------------------\n'[ color ]);
+        stdStreams.stdout.write((cp.handle + ': completed\n')[ color ]);
+        stdStreams.stdout.write('------------------\n'[ color ]);
+
+        childProcesses.forEach(function ( cp2, i2 ) {
+          if (cp2.hasOwnProperty('waitOn') && cp2.waitOn === cp.handle) {
+            deferred.resolve(spawnProcess(cp2, i2));
+          }
+        });
+      }
     });
 
     return deferred.promise;
