@@ -1,9 +1,42 @@
+var stubRequire = require('proxyquire');
 var chai = require('chai');
 var expect = chai.expect;
 
-var entry = require('../src/entry');
+function validExecStub(cmd, opts, cb) {
+  return typeof opts === 'function' ? opts(null, '') : cb(null, '');
+}
+
+function invalidExecStub(cmd, opts, cb) {
+  return typeof opts === 'function' ? opts(new Error()) : cb(new Error());
+}
+
+function validSpawnStub(cmd, args, opts) {
+  return {
+    stdout: {
+      on: function () {
+        return this;
+      }
+    },
+    stderr: {
+      on: function () {
+        return this;
+      }
+    }
+  };
+}
+
+var childProcessStub = {};
+
 
 describe('Configuration validation', function () {
+
+  childProcessStub.exec = validExecStub;
+  childProcessStub.spawn = validSpawnStub;
+
+  var entry = stubRequire('../src/entry', {
+    /*jshint camelcase: false */
+    child_process: childProcessStub
+  });
 
   it('should enforce the presence of a handle for every item', function () {
     function test() {
@@ -115,5 +148,20 @@ describe('Configuration validation', function () {
       ]);
     }
     expect(test).to.throw(Error, /already been used as a stdinPrefix/);
+  });
+
+  it('should accept a valid configuration', function () {
+    function test() {
+      entry([
+        {
+          handle: 'Configuration validation test',
+          spawn: {
+            command: 'echo',
+            args: [ '\ntest echo' ]
+          }
+        }
+      ]);
+    }
+    expect(test).not.to.throw(Error);
   });
 });
