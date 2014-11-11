@@ -119,7 +119,7 @@ function commandExists( cp ) {
 //   color    {String}    The color to use for stdout logs from the process
 //
 function spawnProcess( cp, color ) {
-  console.log('SPAWNPROCESS COLOR', color);
+
   // check to see if the command exists
   return commandExists(cp)
   .then(function () {
@@ -164,7 +164,7 @@ function spawnProcess( cp, color ) {
 
         childProcesses.forEach(function ( cp2, i2 ) {
           if (cp2.hasOwnProperty('waitOn') && cp2.waitOn === cp.handle) {
-            deferred.resolve(spawnProcess(cp2, i2));
+            deferred.resolve(spawnProcess(cp2, CHILD_COLORS[ i2 % CHILD_COLORS.length ]));
           }
         });
       }
