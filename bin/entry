@@ -31,7 +31,11 @@ if ( !childProcesses ) {
 childProcesses = require(childProcesses);
 
 try {
-  entry(childProcesses, env);
+  entry(childProcesses, env, {
+    stdout: process.stdout,
+    stderr: process.stderr,
+    stdin: process.stdin
+  });
 } catch ( e ) {
   console.error(('Error: ' +  e.message).red);
   process.exit(1);

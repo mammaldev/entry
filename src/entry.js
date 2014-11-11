@@ -22,18 +22,23 @@ var CHILD_STD_STREAMS = [
 ];
 
 var completed = [];
+var childProcesses;
+var stdStreams;
 
-module.exports = function entry(childProcesses, env) {
+module.exports = function entry(procs, env, streams) {
 
   // Validate the config file entries. If any are invalid we can't continue.
-  var error = validateConfig(childProcesses);
+  var error = validateConfig(procs);
   if ( error ) {
     throw new Error('Error: ' + error);
   }
 
+  stdStreams = streams || process;
+  childProcesses = procs;
+
   setEnv(env)
-  .then(spawnProcesses.bind(null, childProcesses))
-  .then(pipeStdIn.bind(null, childProcesses))
+  .then(spawnProcesses)
+  .then(pipeStdIn)
   .fail(function ( err ) {
     console.error(('Error: ' +  err.message).red);
   });
@@ -113,8 +118,7 @@ function commandExists( cp ) {
 //   cp       {Object}    An Entry Spawn definition
 //   color    {String}    The color to use for stdout logs from the process
 //
-function spawnProcess( cp, color, childProcesses ) {
-
+function spawnProcess( cp, color ) {
   // check to see if the command exists
   return commandExists(cp)
   .then(function () {
@@ -136,7 +140,7 @@ function spawnProcess( cp, color, childProcesses ) {
         //
         //   Handle: process output
         //
-        process[ str ].write(
+        stdStreams[ str ].write(
           data.toString('utf8')
           .replace(/(^|\n)([^\n]+)/g, function ( match, group1, group2 ) {
             return group1 + ( cp.handle + ': ' )[ color ] + group2;
@@ -150,9 +154,9 @@ function spawnProcess( cp, color, childProcesses ) {
           // Record the fact that this process has now finished. If other
           // processes depend on it they can now run.
           completed.push(cp.handle);
-          process.stdout.write('------------------\n'[ color ]);
-          process.stdout.write((cp.handle + ': completed\n')[ color ]);
-          process.stdout.write('------------------\n'[ color ]);
+          stdStreams.stdout.write('------------------\n'[ color ]);
+          stdStreams.stdout.write((cp.handle + ': completed\n')[ color ]);
+          stdStreams.stdout.write('------------------\n'[ color ]);
 
           childProcesses.forEach(function ( cp2, i2 ) {
             if (cp2.hasOwnProperty('waitOn') && cp2.waitOn === cp.handle) {
@@ -171,7 +175,7 @@ function spawnProcess( cp, color, childProcesses ) {
 // Spawn all child processes that do not depend on another. Processes that need
 // to wait until another has exited will run at that point in time.
 //
-function spawnProcesses(childProcesses) {
+function spawnProcesses() {
 
   return Q.all(
     childProcesses.map(function ( cp, i ) {
@@ -182,7 +186,7 @@ function spawnProcesses(childProcesses) {
         // easier to read the Entry output
         var color = CHILD_COLORS[ i % CHILD_COLORS.length ];
 
-        return spawnProcess(cp, color, childProcesses);
+        return spawnProcess(cp, color);
       }
     })
   );
@@ -193,7 +197,7 @@ function spawnProcesses(childProcesses) {
 // corresponding to child processes and are passed through to the relevant
 // process.
 //
-function pipeStdIn(childProcesses) {
+function pipeStdIn() {
 
   process.stdin.resume();
   process.stdin.on('data', function ( chunk ) {
