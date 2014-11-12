@@ -36,7 +36,7 @@ module.exports = function entry(procs, env, streams) {
   stdStreams = streams || process;
   childProcesses = procs;
 
-  setEnv(env)
+  return setEnv(env)
   .then(spawnProcesses)
   .then(pipeStdIn)
   .fail(function ( err ) {
@@ -125,9 +125,20 @@ function spawnProcess( cp, color ) {
   .then(function () {
 
     var deferred = Q.defer();
+    var hasDependants = childProcesses.some(function (cp2) {
+      return cp2.waitOn === cp.handle;
+    });
 
     // Spawn the child process passing in any relevant arguments/options.
     cp.process = spawn(cp.spawn.command, cp.spawn.args);
+
+    // If the process doesn't have any dependants then no further processing is
+    // necessary. Dependant processes cannot run until this process terminates
+    // but long-running processes will never terminate hence the need to
+    // resolve the promise here rather than in the process close event handler.
+    if (!hasDependants) {
+      deferred.resolve();
+    }
 
     // Bind listeners to the relevant standard streams of the child process.
     // All output is written to our own stdout.
@@ -162,11 +173,24 @@ function spawnProcess( cp, color ) {
         stdStreams.stdout.write((cp.handle + ': completed\n')[ color ]);
         stdStreams.stdout.write('------------------\n'[ color ]);
 
-        childProcesses.forEach(function ( cp2, i2 ) {
-          if (cp2.hasOwnProperty('waitOn') && cp2.waitOn === cp.handle) {
-            deferred.resolve(spawnProcess(cp2, CHILD_COLORS[ i2 % CHILD_COLORS.length ]));
+        // If there are other processes that depend on this one we can run them
+        // now.
+        var dependants = [];
+        childProcesses.forEach(function (cp2, i) {
+          if (cp2.waitOn === cp.handle) {
+            var color = CHILD_COLORS[ i % CHILD_COLORS.length ];
+            dependants.push(spawnProcess(cp2, color));
           }
         });
+
+        if (dependants.length) {
+          return Q.all(dependants).then(function () {
+            deferred.resolve();
+          });
+        }
+
+        // If there are no dependants then this process is finished with
+        deferred.resolve();
       }
     });
 
@@ -222,6 +246,10 @@ function pipeStdIn() {
     var cmd = s.substring(cp.stdinPrefix.length + 1);
     cp.process.stdin.write(cmd);
   });
+
+  var deferred = Q.defer();
+  deferred.resolve();
+  return deferred.promise;
 }
 
 //
