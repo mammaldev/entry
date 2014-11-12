@@ -1,42 +1,51 @@
+var MockStream = require('mock-utf8-stream');
 var stubRequire = require('proxyquire');
+var mockSpawn = require('mock-spawn');
 var chai = require('chai');
 var expect = chai.expect;
 
+// A simple mock for child_process.exec that just immediately calls the
+// callback with an empty string and no error.
 function validExecStub(cmd, opts, cb) {
   return typeof opts === 'function' ? opts(null, '') : cb(null, '');
 }
 
-function invalidExecStub(cmd, opts, cb) {
-  return typeof opts === 'function' ? opts(new Error()) : cb(new Error());
-}
+// Mock the child_process.spawn method.
+var mockedSpawn = mockSpawn();
+mockedSpawn.setStrategy(function (cmd) {
+  switch (cmd) {
+  case 'thing':
+    return function (cb) {
+      this.stdout.write('stdout data');
+      return cb(0);
+    };
+  }
+  return null;
+});
 
-function validSpawnStub(cmd, args, opts) {
-  return {
-    stdout: {
-      on: function () {
-        return this;
-      }
-    },
-    stderr: {
-      on: function () {
-        return this;
-      }
-    }
+// Setup the mocks and import the main script with them.
+var childProcessStub = {
+  exec: validExecStub,
+  spawn: mockedSpawn
+};
+
+var entry = stubRequire('../src/entry', {
+  /*jshint camelcase: false */
+  child_process: childProcessStub
+  /*jshint camelcase: true */
+});
+
+// Mock the standard streams and start capturing data written to them.
+var mockedStreams;
+beforeEach(function () {
+  mockedStreams = {
+    stdout: new MockStream.MockWritableStream(),
+    stderr: new MockStream.MockWritableStream()
   };
-}
-
-var childProcessStub = {};
-
+  mockedStreams.stdout.startCapture();
+});
 
 describe('Configuration validation', function () {
-
-  childProcessStub.exec = validExecStub;
-  childProcessStub.spawn = validSpawnStub;
-
-  var entry = stubRequire('../src/entry', {
-    /*jshint camelcase: false */
-    child_process: childProcessStub
-  });
 
   it('should enforce the presence of a handle for every item', function () {
     function test() {
@@ -160,8 +169,28 @@ describe('Configuration validation', function () {
             args: [ '\ntest echo' ]
           }
         }
-      ]);
+      ], null, mockedStreams);
     }
     expect(test).not.to.throw(Error);
+  });
+});
+
+describe('Output', function () {
+
+  it('should relay child stdout streams to this process', function (done) {
+    entry([
+      {
+        handle: 'thing',
+        spawn: {
+          command: 'thing'
+        }
+      }
+    ], null, mockedStreams)
+    .then(function () {
+      setTimeout(function () {
+        expect(mockedStreams.stdout.capturedData).to.contain('completed');
+        done();
+      }, 0);
+    });
   });
 });

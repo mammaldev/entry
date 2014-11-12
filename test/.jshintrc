@@ -15,6 +15,7 @@
   "unused": true,
   "node": true,
   "globals": {
+    "beforeEach": false,
     "describe": false,
     "it": false
   }
