@@ -9,15 +9,15 @@ It takes an `entry.json` file containing an array of commands and runs them as s
 $ npm install -g node-entry
 ```
 
-## Configuration
-
-### CLI
+## Usage
 
 ```bash
 $ entry
 ```
 
-#### Arguments
+## Configuration
+
+### Arguments
 
 | Name                                | Details |
 | ----------------------------------- | ------- |
