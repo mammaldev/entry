@@ -27,7 +27,6 @@ $ entry
 ### An entry task
 
 ```json
-
 {
   "handle": "myHandle",
   "spawn": {
