@@ -2,7 +2,10 @@ var MockStream = require('mock-utf8-stream');
 var stubRequire = require('proxyquire');
 var mockSpawn = require('mock-spawn');
 var chai = require('chai');
+var chaiAsPromised = require("chai-as-promised");
+
 var expect = chai.expect;
+chai.use(chaiAsPromised);
 
 // A simple mock for child_process.exec that just immediately calls the
 // callback with an empty string and no error.
@@ -48,20 +51,19 @@ beforeEach(function () {
 describe('Configuration validation', function () {
 
   it('should enforce the presence of a handle for every item', function () {
-    function test() {
+    return expect(
       entry([
         {
           spawn: {
             command: 'thing'
           }
         }
-      ]);
-    }
-    expect(test).to.throw(Error, /has no handle/);
+      ])
+    ).to.eventually.be.rejectedWith(Error, /has no handle/);
   });
 
   it('should enforce uniqueness of handles', function () {
-    function test() {
+    return expect(
       entry([
         {
           handle: 'thing',
@@ -75,36 +77,34 @@ describe('Configuration validation', function () {
             command: 'thing'
           }
         }
-      ]);
-    }
-    expect(test).to.throw(Error, /already been used as a handle/);
+      ])
+    ).to.eventually.be.rejectedWith(Error, /already been used as a handle/);
   });
 
   it('should enforce the presence of a "spawn" property for every item', function () {
-    function test() {
+    return expect(
       entry([
         {
           handle: 'thing'
         }
-      ]);
-    }
-    expect(test).to.throw(Error, /has no command/);
+      ])
+    ).to.eventually.be.rejectedWith(Error, /has no command/);
   });
 
   it('should enforce the presence of a command for every item', function () {
-    function test() {
+    return expect(
       entry([
         {
           handle: 'thing',
           spawn: {}
         }
-      ]);
-    }
-    expect(test).to.throw(Error, /has no command/);
+      ])
+    ).to.eventually.be.rejectedWith(Error, /has no command/);
   });
 
   it('should ensure waitOn values exist as handles prior to the item', function () {
-    function test() {
+    // no return here as we notify done
+    return expect(
       entry([
         {
           handle: 'thing',
@@ -113,11 +113,12 @@ describe('Configuration validation', function () {
           },
           waitOn: 'other'
         }
-      ]);
-    }
-    expect(test).to.throw(Error, /does not exist prior to it/);
+      ])
+    ).to.eventually.be.rejectedWith(Error, /does not exist prior to it/);
+  });
 
-    function test2() {
+  it('should ensure waitOn values exist as handles prior to the item', function () {
+    return expect(
       entry([
         {
           handle: 'thing',
@@ -132,13 +133,12 @@ describe('Configuration validation', function () {
             command: 'other'
           }
         }
-      ]);
-    }
-    expect(test2).to.throw(Error, /does not exist prior to it/);
+      ])
+    ).to.eventually.be.rejectedWith(Error, /does not exist prior to it/);
   });
 
   it('should enforce uniqueness of stdinPrefix values', function () {
-    function test() {
+    return expect(
       entry([
         {
           handle: 'thing',
@@ -154,13 +154,12 @@ describe('Configuration validation', function () {
           },
           stdinPrefix: 'thing'
         }
-      ]);
-    }
-    expect(test).to.throw(Error, /already been used as a stdinPrefix/);
+      ])
+    ).to.eventually.be.rejectedWith(Error, /already been used as a stdinPrefix/);
   });
 
   it('should accept a valid configuration', function () {
-    function test() {
+    return expect(
       entry([
         {
           handle: 'Configuration validation test',
@@ -169,15 +168,14 @@ describe('Configuration validation', function () {
             args: [ '\ntest echo' ]
           }
         }
-      ], null, mockedStreams);
-    }
-    expect(test).not.to.throw(Error);
+      ], null, mockedStreams)
+    ).to.eventually.be.resolved;
   });
 });
 
 describe('Output', function () {
 
-  it('should relay child stdout streams to this process', function (done) {
+  it('should relay child stdout streams to this process', function ( done ) {
     entry([
       {
         handle: 'thing',
