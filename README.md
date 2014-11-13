@@ -18,7 +18,7 @@ $ entry
 | &#8209;&#8209;env&nbsp;(_optional_) | The environment file to source, defaults to `./.env`. |
 | &#8209;&#8209;config&nbsp;(_optional_) | The config `entry.json` file for your project. The default location is in the projects's root directory, but Entry will recursively search from the current working directory up a project tree for a file named  `entry.json`. |
 
-### An entry
+### An entry task
 
 ```json
 
