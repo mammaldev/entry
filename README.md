@@ -1,7 +1,7 @@
 # Entry
 Entry is a command-line tool that helps if you want to run multiple long-running processes in the same terminal session.
 
-It takes a `entry.json` file that defines an array of entries and runs the entries as sequential and/or parallel processes. It means you don't have to remember to run multiple commands in many terminal sessions.
+It takes an `entry.json` file containing an array of commands and runs them as sequential and/or parallel processes. It means you don't have to remember to run multiple commands in many terminal sessions when starting you app.
 
 ## Installation
 
