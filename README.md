@@ -1,5 +1,5 @@
 # Entry
-Entry is a command-line tool that helps if you want to run multiple long-running processes in the same terminal session. 
+Entry is a command-line tool that helps if you want to run multiple long-running processes in the same terminal session.
 
 It takes a `entry.json` file that defines an array of entries and runs the entries as sequential and/or parallel processes. It means you don't have to remember to run multiple commands in many terminal sessions.
 
@@ -11,7 +11,7 @@ $ npm install -g node-entry
 
 ## Configuration
 
-### CLI 
+### CLI
 
 ```bash
 $ entry
@@ -29,13 +29,13 @@ $ entry
 ```json
 
 {
-  "handle": "myHandle",       
-  "spawn": {                  
-    "command": "sleep",       
-    "args": [ "2" ]           
+  "handle": "myHandle",
+  "spawn": {
+    "command": "sleep",
+    "args": [ "2" ]
   },
-  "waitOn": "anotherHandle",  
-  "stdinPrefix": "slp"        
+  "waitOn": "anotherHandle",
+  "stdinPrefix": "slp"
 }
 ```
 
@@ -136,7 +136,7 @@ This is an actual entryfile for one of our projects:
     "handle": "gulp",
     "spawn": {
       "command": "./node_modules/gulp/bin/gulp.js",
-      "args": [ "clean-build" ]      
+      "args": [ "clean-build" ]
     }
   },
   {
