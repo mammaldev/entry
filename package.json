@@ -1,6 +1,6 @@
 {
-  "name": "entry",
-  "version": "0.1.0",
+  "name": "node-entry",
+  "version": "1.0.0",
   "description": "A tool to start multiple long-running shell processes",
   "scripts": {
     "test": "mocha test/ -R spec --recursive"
@@ -39,7 +39,7 @@
       "email": "james.allardice@mammal.io"
     }
   ],
-  "license": "BSD",
+  "license": "MIT",
   "dependencies": {
     "colors": "^1.0.0",
     "findup-sync": "^0.1.2",
