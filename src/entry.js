@@ -26,22 +26,16 @@ var childProcesses;
 var stdStreams;
 
 module.exports = function entry(procs, env, streams) {
+  return Q.fcall(function () {
+    // Validate the config file entries. If any are invalid we can't continue.
+    validateConfig(procs);
 
-  // Validate the config file entries. If any are invalid we can't continue.
-  var error = validateConfig(procs);
-  if ( error ) {
-    throw new Error('Error: ' + error);
-  }
-
-  stdStreams = streams || process;
-  childProcesses = procs;
-
-  return setEnv(env)
+    stdStreams = streams || process;
+    childProcesses = procs;
+  })
+  .then(setEnv.bind(null, env))
   .then(spawnProcesses)
-  .then(pipeStdIn)
-  .fail(function ( err ) {
-    console.error(('Error: ' +  err.message).red);
-  });
+  .then(pipeStdIn);
 };
 
 //
@@ -280,27 +274,27 @@ function validateConfig( config ) {
 
     // handle exists
     if ( !item.handle || !item.handle.length ) {
-      return 'Entry ' + i + ' has no handle. Handles are required.';
+      throw new Error('Entry ' + i + ' has no handle. Handles are required.');
     }
 
     // handle is unique
     if ( !!~handles.indexOf(item.handle) ) {
-      return item.handle + ' has already been used as a handle.';
+      throw new Error(item.handle + ' has already been used as a handle.');
     }
 
     // command exists
     if ( !item.spawn || !item.spawn.command || !item.spawn.command.length ) {
-      return item.handle + ' has no command. Commands are required.';
+      throw new Error(item.handle + ' has no command. Commands are required.');
     }
 
     // if there is a waitOn property, it waits on a handle that exists
     if ( item.waitOn && !~handles.indexOf(item.waitOn) ) {
-      return item.handle + ' waits on ' + item.waitOn + ' which does not exist prior to it.';
+      throw new Error(item.handle + ' waits on ' + item.waitOn + ' which does not exist prior to it.');
     }
 
     // stdinPrefix is unique
     if ( item.stdinPrefix && !!~stdinPrefixes.indexOf(item.stdinPrefix) ) {
-      return item.stdinPrefix + ' has already been used as a stdinPrefix.';
+      throw new Error(item.stdinPrefix + ' has already been used as a stdinPrefix.');
     }
 
     handles.push(item.handle);
