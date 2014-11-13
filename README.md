@@ -8,7 +8,7 @@ It takes a `entry.json` file that defines an array of entries and runs the entri
 ### CLI 
 
 ```bash
-$ my-project: entry --env ./.env --config ./entry.json
+$ entry
 ```
 
 #### Arguments
