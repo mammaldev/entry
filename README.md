@@ -3,6 +3,12 @@ Entry is a command-line tool that helps if you want to run multiple long-running
 
 It takes a `entry.json` file that defines an array of entries and runs the entries as sequential and/or parallel processes. It means you don't have to remember to run multiple commands in many terminal sessions.
 
+## Installation
+
+```bash
+$ npm install -g node-entry
+```
+
 ## Configuration
 
 ### CLI 
