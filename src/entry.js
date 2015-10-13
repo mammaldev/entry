@@ -53,7 +53,7 @@ function setEnv(env) {
 
     // Source the environment and output the result to stdout so we can pass
     // environment variables into child processes.
-    exec('source ' + env + ' && printenv', {
+    exec('. ' + env + ' && printenv', {
       cwd: env.replace(/\/.*/, '')
     }, function ( err, stdout ) {
 
