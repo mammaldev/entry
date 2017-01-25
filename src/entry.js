@@ -123,8 +123,18 @@ function spawnProcess( cp, color ) {
       return cp2.waitOn === cp.handle;
     });
 
+    var env = cp.spawn.env ?
+        (function () {
+          var extendedEnv = JSON.parse(JSON.stringify(process.env));
+          Object.keys(cp.spawn.env).forEach(function ( key ) {
+            extendedEnv[ key ] = cp.spawn.env[ key ];
+          });
+          return extendedEnv;
+        })() :
+        process.env;
+
     // Spawn the child process passing in any relevant arguments/options.
-    cp.process = spawn(cp.spawn.command, cp.spawn.args);
+    cp.process = spawn(cp.spawn.command, cp.spawn.args, { env: env });
 
     // If the process doesn't have any dependants then no further processing is
     // necessary. Dependant processes cannot run until this process terminates
